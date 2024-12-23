@@ -1,19 +1,24 @@
 import streamlit as st
-from .ocr_processor import OCRProcessor
+#from .ocr_processor import OCRProcessor
 import tempfile
 import os
+import sys
 from PIL import Image
 import json
+base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(base_path)
 
-# Page configuration
+from ocr_processor import OCRProcessor
+
+# 页面配置
 st.set_page_config(
-    page_title="OCR with Ollama",
+    page_title="OCR 实验室",
     page_icon="🔍",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for better UI
+# 自定义 CSS 样式
 st.markdown("""
     <style>
     .stApp {
@@ -63,7 +68,7 @@ def get_available_models():
     return ["llava:7b", "llama3.2-vision:11b"]
 
 def process_single_image(processor, image_path, format_type, enable_preprocessing):
-    """Process a single image and return the result"""
+    """处理单张图片并返回结果"""
     try:
         result = processor.process_image(
             image_path=image_path,
@@ -72,10 +77,10 @@ def process_single_image(processor, image_path, format_type, enable_preprocessin
         )
         return result
     except Exception as e:
-        return f"Error processing image: {str(e)}"
+        return f"处理图片时出错: {str(e)}"
 
 def process_batch_images(processor, image_paths, format_type, enable_preprocessing):
-    """Process multiple images and return results"""
+    """处理多张图片并返回结果"""
     try:
         results = processor.process_batch(
             input_path=image_paths,
@@ -87,105 +92,105 @@ def process_batch_images(processor, image_paths, format_type, enable_preprocessi
         return {"error": str(e)}
 
 def main():
-    st.title("🔍 Vision OCR Lab")
-    st.markdown("<p style='text-align: center; color: #666;'>Powered by Ollama Vision Models</p>", unsafe_allow_html=True)
+    st.title("🔍 OCR 实验室")
+    st.markdown("<p style='text-align: center; color: #666;'>由 Ollama 视觉模型提供支持</p>", unsafe_allow_html=True)
 
-    # Sidebar controls
+    # 侧边栏控件
     with st.sidebar:
-        st.header("🎮 Controls")
+        st.header("🎮 控制面板")
         
         selected_model = st.selectbox(
-            "🤖 Select Vision Model",
+            "🤖 选择视觉模型",
             get_available_models(),
             index=0,
         )
         
         format_type = st.selectbox(
-            "📄 Output Format",
+            "📄 输出格式",
             ["markdown", "text", "json", "structured", "key_value"],
-            help="Choose how you want the extracted text to be formatted"
+            help="选择提取文本的输出格式"
         )
 
         max_workers = st.slider(
-            "🔄 Parallel Processing",
+            "🔄 并行处理数量",
             min_value=1,
             max_value=8,
             value=2,
-            help="Number of images to process in parallel (for batch processing)"
+            help="批量处理时的并行图片处理数量"
         )
 
         enable_preprocessing = st.checkbox(
-            "🔍 Enable Preprocessing",
+            "🔍 启用预处理",
             value=True,
-            help="Apply image enhancement and preprocessing"
+            help="应用图像增强和预处理"
         )
         
         st.markdown("---")
         
-        # Model info box
+        # 模型信息框
         if selected_model == "llava:7b":
-            st.info("LLaVA 7B: Efficient vision-language model optimized for real-time processing")
+            st.info("LLaVA 7B: 高效的视觉语言模型，适用于实时处理")
         else:
-            st.info("Llama 3.2 Vision: Advanced model with high accuracy for complex text extraction")
+            st.info("Llama 3.2 Vision: 高精度模型，适用于复杂文本提取")
 
-    # Initialize OCR Processor
+    # 初始化 OCR 处理器
     processor = OCRProcessor(model_name=selected_model, max_workers=max_workers)
 
-    # Main content area with tabs
-    tab1, tab2 = st.tabs(["📸 Image Processing", "ℹ️ About"])
+    # 主内容区域，包含标签页
+    tab1, tab2 = st.tabs(["📸 图片处理", "ℹ️ 关于"])
     
     with tab1:
-        # File upload area with multiple file support
+        # 文件上传区域，支持多文件
         uploaded_files = st.file_uploader(
-            "Drop your images here",
+            "将图片拖放到此处",
             type=['png', 'jpg', 'jpeg', 'tiff', 'bmp', 'pdf'],
             accept_multiple_files=True,
-            help="Supported formats: PNG, JPG, JPEG, TIFF, BMP, PDF"
+            help="支持的格式: PNG, JPG, JPEG, TIFF, BMP, PDF"
         )
 
         if uploaded_files:
-            # Create a temporary directory for uploaded files
+            # 创建临时目录保存上传的文件
             with tempfile.TemporaryDirectory() as temp_dir:
                 image_paths = []
                 
-                # Save uploaded files and collect paths
+                # 保存上传的文件并收集路径
                 for uploaded_file in uploaded_files:
                     temp_path = os.path.join(temp_dir, uploaded_file.name)
                     with open(temp_path, "wb") as f:
                         f.write(uploaded_file.getvalue())
                     image_paths.append(temp_path)
 
-                # Display images in a gallery
-                st.subheader(f"📸 Input Images ({len(uploaded_files)} files)")
+                # 在画廊中显示图片
+                st.subheader(f"📸 输入图片 ({len(uploaded_files)} 个文件)")
                 cols = st.columns(min(len(uploaded_files), 4))
                 for idx, uploaded_file in enumerate(uploaded_files):
                     with cols[idx % 4]:
                         image = Image.open(uploaded_file)
                         st.image(image, use_container_width=True, caption=uploaded_file.name)
 
-                # Process button
-                if st.button("🚀 Process Images"):
-                    with st.spinner("Processing images..."):
+                # 处理按钮
+                if st.button("🚀 开始处理图片"):
+                    with st.spinner("正在处理图片..."):
                         if len(image_paths) == 1:
-                            # Single image processing
+                            # 单张图片处理
                             result = process_single_image(
                                 processor, 
                                 image_paths[0], 
                                 format_type,
                                 enable_preprocessing
                             )
-                            st.subheader("📝 Extracted Text")
+                            st.subheader("📝 提取的文本")
                             st.markdown(result)
                             
-                            # Download button for single result
+                            # 下载按钮
                             st.download_button(
-                                "📥 Download Result",
+                                "📥 下载结果",
                                 result,
                                 file_name=f"ocr_result.{format_type}",
                                 mime="text/plain"
                             )
                         else:
-                            # Batch processing
+                            # 批量处理
                             results = process_batch_images(
                                 processor,
                                 image_paths,
@@ -193,54 +198,54 @@ def main():
                                 enable_preprocessing
                             )
                             
-                            # Display statistics
-                            st.subheader("📊 Processing Statistics")
+                            # 显示统计信息
+                            st.subheader("📊 处理统计信息")
                             col1, col2, col3 = st.columns(3)
                             with col1:
-                                st.metric("Total Images", results['statistics']['total'])
+                                st.metric("总图片数", results['statistics']['total'])
                             with col2:
-                                st.metric("Successful", results['statistics']['successful'])
+                                st.metric("成功数量", results['statistics']['successful'])
                             with col3:
-                                st.metric("Failed", results['statistics']['failed'])
+                                st.metric("失败数量", results['statistics']['failed'])
 
-                            # Display results
-                            st.subheader("📝 Extracted Text")
+                            # 显示结果
+                            st.subheader("📝 提取的文本")
                             for file_path, text in results['results'].items():
-                                with st.expander(f"Result: {os.path.basename(file_path)}"):
+                                with st.expander(f"结果: {os.path.basename(file_path)}"):
                                     st.markdown(text)
 
-                            # Display errors if any
+                            # 显示错误信息
                             if results['errors']:
-                                st.error("⚠️ Some files had errors:")
+                                st.error("⚠️ 部分文件处理失败:")
                                 for file_path, error in results['errors'].items():
                                     st.warning(f"{os.path.basename(file_path)}: {error}")
 
-                            # Download all results as JSON
-                            if st.button("📥 Download All Results"):
+                            # 下载所有结果为 JSON
+                            if st.button("📥 下载所有结果"):
                                 json_results = json.dumps(results, indent=2)
                                 st.download_button(
-                                    "📥 Download Results JSON",
+                                    "📥 下载结果 JSON",
                                     json_results,
                                     file_name="ocr_results.json",
                                     mime="application/json"
                                 )
 
     with tab2:
-        st.header("About Vision OCR Lab")
+        st.header("关于 OCR 实验室")
         st.markdown("""
-        This application uses state-of-the-art vision language models through Ollama to extract text from images.
+        本应用使用最先进的 Ollama 视觉语言模型从图片中提取文本。
         
-        ### Features:
-        - 🖼️ Support for multiple image formats
-        - 📦 Batch processing capability
-        - 🔄 Parallel processing
-        - 🔍 Image preprocessing and enhancement
-        - 📊 Multiple output formats
-        - 📥 Easy result download
+        ### 功能特点:
+        - 🖼️ 支持多种图片格式
+        - 📦 批量处理能力
+        - 🔄 并行处理
+        - 🔍 图像预处理和增强
+        - 📊 多种输出格式
+        - 📥 结果轻松下载
         
-        ### Models:
-        - **LLaVA 7B**: Efficient vision-language model for real-time processing
-        - **Llama 3.2 Vision**: Advanced model with high accuracy for complex documents
+        ### 模型:
+        - **LLaVA 7B**: 高效的视觉语言模型，适用于实时处理
+        - **Llama 3.2 Vision**: 高精度模型，适用于复杂文档
         """)
 
 if __name__ == "__main__":
