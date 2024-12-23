@@ -1,13 +1,9 @@
 import streamlit as st
-#from .ocr_processor import OCRProcessor
 import tempfile
 import os
 import sys
 from PIL import Image
 import json
-base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(base_path)
-
 from ocr_processor import OCRProcessor
 
 # 页面配置
@@ -21,54 +17,23 @@ st.set_page_config(
 # 自定义 CSS 样式
 st.markdown("""
     <style>
-    .stApp {
-        max-width: 100%;
-        padding: 1rem;
-    }
-    .main {
-        background-color: #f8f9fa;
-    }
-    .stButton button {
-        width: 100%;
-        border-radius: 5px;
-        height: 3em;
-        background-color: #4CAF50;
-        color: white;
-    }
-    .stSelectbox {
-        margin-bottom: 1rem;
-    }
-    .upload-text {
-        text-align: center;
-        padding: 2rem;
-        border: 2px dashed #ccc;
-        border-radius: 10px;
-        background-color: #ffffff;
-    }
-    .stImage {
-        border-radius: 10px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .gallery {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 1rem;
-        padding: 1rem;
-    }
-    .gallery-item {
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        padding: 0.5rem;
-        background: white;
-    }
+    .stApp { max-width: 100%; padding: 1rem; }
+    .main { background-color: #f8f9fa; }
+    .stButton button { width: 100%; border-radius: 5px; height: 3em; background-color: #4CAF50; color: white; }
+    .stSelectbox { margin-bottom: 1rem; }
+    .upload-text { text-align: center; padding: 2rem; border: 2px dashed #ccc; border-radius: 10px; background-color: #ffffff; }
+    .stImage { border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; padding: 1rem; }
+    .gallery-item { border: 1px solid #ddd; border-radius: 8px; padding: 0.5rem; background: white; }
     </style>
     """, unsafe_allow_html=True)
 
+# 获取可用模型
 def get_available_models():
-    return ["llava:7b", "llama3.2-vision:11b"]
+    return ["llama3.2-vision:11b", "llava:7b"]
 
+# 单张图片处理
 def process_single_image(processor, image_path, format_type, enable_preprocessing):
-    """处理单张图片并返回结果"""
     try:
         result = processor.process_image(
             image_path=image_path,
@@ -79,8 +44,8 @@ def process_single_image(processor, image_path, format_type, enable_preprocessin
     except Exception as e:
         return f"处理图片时出错: {str(e)}"
 
+# 批量图片处理
 def process_batch_images(processor, image_paths, format_type, enable_preprocessing):
-    """处理多张图片并返回结果"""
     try:
         results = processor.process_batch(
             input_path=image_paths,
@@ -91,6 +56,7 @@ def process_batch_images(processor, image_paths, format_type, enable_preprocessi
     except Exception as e:
         return {"error": str(e)}
 
+# 主函数
 def main():
     st.title("🔍 OCR 实验室")
     st.markdown("<p style='text-align: center; color: #666;'>由 Ollama 视觉模型提供支持</p>", unsafe_allow_html=True)
@@ -128,10 +94,11 @@ def main():
         st.markdown("---")
         
         # 模型信息框
-        if selected_model == "llava:7b":
-            st.info("LLaVA 7B: 高效的视觉语言模型，适用于实时处理")
-        else:
-            st.info("Llama 3.2 Vision: 高精度模型，适用于复杂文本提取")
+        model_info = {
+            "llava:7b": "LLaVA 7B: 高效的视觉语言模型，适用于实时处理",
+            "llama3.2-vision:11b": "Llama 3.2 Vision: 高精度模型，适用于复杂文本提取"
+        }
+        st.info(model_info.get(selected_model, "未知模型"))
 
     # 初始化 OCR 处理器
     processor = OCRProcessor(model_name=selected_model, max_workers=max_workers)
