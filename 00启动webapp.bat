@@ -32,8 +32,8 @@ CALL %CONDA_PATH%\Scripts\activate.bat %INSTALL_ENV_DIR%
 
 
 cd /d %Git_DIR%\src
-::start python start_ollama.py
-::python -m streamlit run 
+start /B python start_ollama.py
+
 
 python -m streamlit run app.py
 
